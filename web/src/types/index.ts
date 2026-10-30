@@ -50,3 +50,4 @@ export interface DeviceSession {
   lastActive?: string;
   statusText: string;
 }
+

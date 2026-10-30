@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Shield, Sparkles, Send, CheckCircle2, AlertCircle, RefreshCw, Zap } from "lucide-react";
+import { Shield, Sparkles, Send, CheckCircle2, AlertCircle, RefreshCw, Zap, CheckCheck } from "lucide-react";
 import { applySpintax, applySpintaxDynamic } from "../lib/spintax";
 
 export function AntiBanSimulator() {
@@ -26,6 +26,7 @@ export function AntiBanSimulator() {
     smsType: string;
     message: string;
     status: 'sent' | 'skipped';
+    time: string;
   }>>([]);
 
   const handleNextDispatch = () => {
@@ -39,13 +40,16 @@ export function AntiBanSimulator() {
     rendered = applySpintaxDynamic(rendered);
 
     const isSkipped = !student.hasWhatsApp;
+    const now = new Date();
+    const timeStr = `${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'PM' : 'AM'}`;
 
     setHistory((prev) => [
       {
         student,
         smsType: `SMS #${variantIndex + 1}`,
-        message: isSkipped ? "Auto-dismissed WhatsApp Web error popup ('Phone number shared via url is invalid'). Zero delay skip." : rendered,
+        message: isSkipped ? "Auto-dismissed invalid phone alert (Skipped with zero stall)" : rendered,
         status: isSkipped ? 'skipped' : 'sent',
+        time: timeStr,
       },
       ...prev.slice(0, 4),
     ]);
@@ -59,168 +63,180 @@ export function AntiBanSimulator() {
   };
 
   return (
-    <section id="simulator" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-      <div className="text-center max-w-3xl mx-auto mb-12">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold mb-4">
+    <section id="simulator" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto relative">
+      <div className="text-center max-w-3xl mx-auto mb-14">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold mb-4 shadow-inner">
           <Shield className="w-3.5 h-3.5" />
-          <span>Interactive Live Demo</span>
+          <span>Interactive Anti-Ban Engine Simulator</span>
         </div>
-        <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-          See How the <span className="bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">Anti-Restriction Rotation</span> Protects You
+        <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
+          Experience the <span className="text-gradient">Anti-Restriction Rotation</span> Live
         </h2>
-        <p className="mt-3 text-slate-400 text-sm sm:text-base leading-relaxed">
-          Sending the exact same message to 50+ numbers triggers WhatsApp spam flags. WhatsPulse rotates 3 to 5 message designs sequentially and parses Spintax dynamically.
+        <p className="mt-4 text-slate-400 text-sm sm:text-base leading-relaxed">
+          Blasting the exact same message to 50+ numbers triggers WhatsApp spam flags. WhatsPulse rotates 3 to 5 message variations sequentially with dynamic Spintax, simulating organic manual chats.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
         {/* Left Studio Editor */}
-        <div className="lg:col-span-6 glass-panel rounded-2xl p-6 border border-slate-800 shadow-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-base text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-emerald-400" />
-              <span>Multi-SMS Variation Studio</span>
-            </h3>
-            <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              3 Active Designs
-            </span>
-          </div>
-
-          {/* Variant Tabs */}
-          <div className="flex space-x-2 border-b border-slate-800 pb-2 mb-4 overflow-x-auto">
-            {variants.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setActiveTab(idx)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  activeTab === idx
-                    ? "bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20"
-                    : "bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800"
-                }`}
-              >
-                SMS #{idx + 1}
-              </button>
-            ))}
-          </div>
-
-          {/* Active Variant Editor */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-xs text-slate-400">
-              <span>Editing: <strong className="text-white">Design #{activeTab + 1}</strong></span>
-              <span className="text-[11px] text-emerald-400">Supports Spintax &bull; &#123;Hello|Hi&#125;</span>
+        <div className="lg:col-span-6 glass-panel rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl flex flex-col justify-between">
+          <div className="space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm sm:text-base text-white">Multi-SMS Variation Studio</h3>
+                  <p className="text-[11px] text-slate-400">Sequential round-robin pattern active</p>
+                </div>
+              </div>
+              <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-300 font-bold border border-emerald-500/20 font-mono">
+                3 Variants
+              </span>
             </div>
-            <textarea
-              rows={4}
-              value={variants[activeTab]}
-              onChange={(e) => {
-                const updated = [...variants];
-                updated[activeTab] = e.target.value;
-                setVariants(updated);
-              }}
-              className="w-full bg-slate-950/80 border border-slate-850 rounded-xl p-3.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 transition-colors resize-none font-mono"
-            />
-            
-            {/* Chips */}
-            <div className="flex flex-wrap gap-2 text-xs">
-              <span className="px-2 py-1 rounded bg-slate-800/80 text-slate-300 border border-slate-700">
-                Tag: &#123;name&#125;
-              </span>
-              <span className="px-2 py-1 rounded bg-slate-800/80 text-slate-300 border border-slate-700">
-                Tag: &#123;roll&#125;
-              </span>
-              <span className="px-2 py-1 rounded bg-slate-800/80 text-emerald-400 border border-emerald-500/30">
-                Spintax: &#123;হ্যালো|প্রিয়&#125;
-              </span>
+
+            {/* Variant Tabs */}
+            <div className="flex space-x-2 pb-1 overflow-x-auto">
+              {variants.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveTab(idx)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                    activeTab === idx
+                      ? "bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 shadow-md shadow-emerald-500/20 scale-105"
+                      : "bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-850 border border-slate-800"
+                  }`}
+                >
+                  SMS #{idx + 1}
+                </button>
+              ))}
+            </div>
+
+            {/* Active Variant Editor */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span>Editing: <strong className="text-white">Design #{activeTab + 1}</strong></span>
+                <span className="text-[11px] text-emerald-400 font-mono">Supports Spintax &bull; &#123;Hello|Hi&#125;</span>
+              </div>
+              <textarea
+                rows={4}
+                value={variants[activeTab]}
+                onChange={(e) => {
+                  const updated = [...variants];
+                  updated[activeTab] = e.target.value;
+                  setVariants(updated);
+                }}
+                className="w-full bg-[#070b14] border border-slate-800 rounded-2xl p-4 text-xs sm:text-sm text-slate-100 focus:outline-none focus:border-emerald-500 transition-colors resize-none font-sans leading-relaxed shadow-inner"
+              />
+              
+              {/* Chips */}
+              <div className="flex flex-wrap gap-2 text-xs">
+                <span className="px-2.5 py-1 rounded-lg bg-slate-900 text-slate-300 border border-slate-800 text-[11px]">
+                  Variable: <code className="text-emerald-400">&#123;name&#125;</code>
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-slate-900 text-slate-300 border border-slate-800 text-[11px]">
+                  Variable: <code className="text-emerald-400">&#123;roll&#125;</code>
+                </span>
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/25 text-[11px]">
+                  Spintax: <code className="text-emerald-300">&#123;হ্যালো|প্রিয়&#125;</code>
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Action Trigger */}
-          <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between gap-3">
+          <div className="mt-6 pt-5 border-t border-slate-800/80 flex items-center gap-3">
             <button
               onClick={handleNextDispatch}
-              className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/25 transition-all hover:scale-[1.01] active:scale-[0.98]"
+              className="flex-1 flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 hover:opacity-95 text-slate-950 font-black text-xs sm:text-sm shadow-xl shadow-emerald-500/25 transition-all hover:scale-[1.01] active:scale-[0.98]"
             >
               <Send className="w-4 h-4 fill-slate-950" />
               <span>Simulate Next Dispatch</span>
             </button>
             <button
               onClick={handleReset}
-              className="px-3 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-800"
-              title="Reset simulator"
+              className="p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-white transition-colors border border-slate-800"
+              title="Reset feed"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Right Live Dispatch Feed */}
-        <div className="lg:col-span-6 glass-panel rounded-2xl p-6 border border-slate-800 shadow-2xl flex flex-col justify-between min-h-[420px]">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-base text-white flex items-center gap-2">
-                <Zap className="w-4 h-4 text-amber-400" />
-                <span>Live Recipient Dispatch Feed</span>
-              </h3>
-              <span className="text-xs text-slate-400 font-mono">
-                Queue Total: {currentIndex} sent/skipped
-              </span>
+        {/* Right WhatsApp Mobile Screen Mockup */}
+        <div className="lg:col-span-6 bg-[#0b141a] rounded-3xl border border-slate-800 shadow-2xl flex flex-col justify-between overflow-hidden relative min-h-[460px]">
+          {/* WhatsApp Header Bar */}
+          <div className="bg-[#1f2c34] px-5 py-3.5 flex items-center justify-between border-b border-[#2a3942] z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-emerald-600/30 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold text-xs">
+                WP
+              </div>
+              <div>
+                <h4 className="text-xs font-bold text-white leading-none">WhatsApp Student Dispatch</h4>
+                <span className="text-[10px] text-emerald-400 font-medium">● Connected (Cloud Session)</span>
+              </div>
             </div>
-
-            <div className="space-y-3">
-              {history.length === 0 ? (
-                <div className="p-8 text-center text-slate-500 text-sm border border-dashed border-slate-850 rounded-xl my-4">
-                  <p>Click <strong className="text-emerald-400">&quot;Simulate Next Dispatch&quot;</strong> on the left to watch sequential SMS rotation and automatic non-WhatsApp skip handling.</p>
-                </div>
-              ) : (
-                history.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className={`p-3.5 rounded-xl border transition-all animate-in fade-in slide-in-from-top-2 ${
-                      item.status === 'skipped'
-                        ? 'bg-amber-950/20 border-amber-500/30'
-                        : 'bg-slate-900/80 border-slate-800'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between text-xs mb-1.5">
-                      <span className="font-semibold text-slate-200">
-                        {item.student.name} ({item.student.phone})
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          item.status === 'skipped'
-                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                            : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                        }`}>
-                          {item.smsType}
-                        </span>
-                        {item.status === 'skipped' ? (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400">
-                            <AlertCircle className="w-3.5 h-3.5" /> Auto-Skipped
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Delivered
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <p className={`text-xs ${item.status === 'skipped' ? 'text-amber-200/80 italic' : 'text-slate-300'}`}>
-                      &ldquo;{item.message}&rdquo;
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
+            <span className="text-[11px] font-mono text-slate-400">
+              {currentIndex} Dispatched
+            </span>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-850 flex items-center justify-between text-xs text-slate-400">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              Round-Robin Pattern: 1 ➔ 2 ➔ 3 ➔ 1 ➔ 2
+          {/* Chat Messages Stream */}
+          <div className="p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto">
+            {history.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center p-8 space-y-3">
+                <div className="w-12 h-12 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-center text-emerald-400">
+                  <Send className="w-5 h-5" />
+                </div>
+                <p className="text-xs text-slate-400 max-w-xs">
+                  Click <strong className="text-emerald-400">&ldquo;Simulate Next Dispatch&rdquo;</strong> to watch how different students receive rotating designs and how non-WhatsApp numbers auto-skip!
+                </p>
+              </div>
+            ) : (
+              history.map((item, idx) => (
+                <div key={idx} className="space-y-1 animate-in fade-in slide-in-from-bottom-2">
+                  <div className="flex items-center justify-between px-1 text-[11px] text-slate-400">
+                    <span className="font-medium text-slate-300">To: {item.student.name} ({item.student.phone})</span>
+                    <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                      item.status === 'skipped'
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                        : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                    }`}>
+                      {item.smsType}
+                    </span>
+                  </div>
+
+                  {item.status === 'skipped' ? (
+                    <div className="p-3 rounded-2xl bg-amber-950/40 border border-amber-500/30 text-xs text-amber-200 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                      <span>{item.message} &bull; <strong>Auto-Advanced</strong></span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-end">
+                      <div className="max-w-[85%] bg-[#005c4b] text-white p-3 rounded-2xl rounded-tr-none shadow-md space-y-1">
+                        <p className="text-xs sm:text-[13px] leading-relaxed">
+                          {item.message}
+                        </p>
+                        <div className="flex items-center justify-end gap-1 text-[10px] text-emerald-200/80">
+                          <span>{item.time}</span>
+                          <CheckCheck className="w-3.5 h-3.5 text-cyan-300" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Footer bar */}
+          <div className="bg-[#1f2c34] px-4 py-2.5 flex items-center justify-between text-[11px] text-slate-400 border-t border-[#2a3942]">
+            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Anti-Spam Algorithmic Protection Active</span>
             </span>
-            <span className="text-[11px] text-slate-500">
-              Zero Meta Conversation Fees
-            </span>
+            <span className="text-slate-400 font-mono">0% Ban Rate</span>
           </div>
         </div>
       </div>
