@@ -94,3 +94,33 @@ If you modify code and want to refresh the standalone `.app` bundle:
 source .venv/bin/activate
 pyinstaller whatsapp_messenger.spec
 ```
+
+---
+
+## 6. Running the WhatsPulse Next.js SaaS Website
+
+We built a full, production-ready SaaS web platform inside the `web/` directory using Next.js 16, React 19, TypeScript, and Tailwind CSS.
+
+### Start the Next.js SaaS in Development Mode:
+```bash
+cd /Users/wasee/Desktop/Wasee/Whatsapp/web
+npm run dev
+```
+Open **[http://localhost:3000](http://localhost:3000)** in your browser to view:
+- **Public Landing Page**: High-converting sales page with live interactive Anti-Ban Simulator, ROI Savings Calculator, Features, Pricing ($19, $49, $99), and FAQs.
+- **SaaS Web App**: Click **"Launch App"** or navigate directly to **[http://localhost:3000/app](http://localhost:3000/app)**:
+  - 📊 **Overview**: Real-time deliverability stats, device status card, quick campaign launcher.
+  - 🚀 **Campaigns**: Multi-SMS Anti-Restriction Studio with dynamic tabs (SMS #1, #2, #3...), live multi-student rotation preview, and simulated real-time queue dispatcher.
+  - 👥 **Contacts & Students**: Recipient CRM with search, batch filters, status tags (`Active WhatsApp`, `No WhatsApp`), Add/Import modals.
+  - 🛡️ **Message Variants**: Template library with multi-variant management.
+  - 📱 **WhatsApp Connect**: Cloud Web QR code scanner hub.
+  - 📈 **Reports & Audit**: Delivery reports and CSV exports.
+  - ⚙️ **Settings & Billing**: Pro plan subscription manager, throttle jitter sliders, and developer API keys.
+
+### Build and Start for Production:
+```bash
+cd /Users/wasee/Desktop/Wasee/Whatsapp/web
+npm run build
+npm run start
+```
+

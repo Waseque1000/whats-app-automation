@@ -68,3 +68,8 @@ data/
 .DS_Store
 .AppleDouble
 .LSOverride
+
+# Node / Next.js
+node_modules/
+.next/
+out/
