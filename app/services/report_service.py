@@ -62,7 +62,7 @@ class ReportService:
 
         cols = [
             "id", "campaign_id", "student_id", "student_name", "phone",
-            "consent_status", "personalized_message", "status",
+            "consent_status", "sms_variant", "variant_index", "personalized_message", "status",
             "error_message", "sent_at", "updated_at"
         ]
         if not df.empty:

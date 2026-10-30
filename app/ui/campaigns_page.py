@@ -10,6 +10,7 @@ from app.ui.components.table_view import TableView
 from app.ui.components.modal_dialog import ModalDialog
 from app.database.repository import CampaignsRepository, StudentsRepository, TemplatesRepository
 from app.services.campaign_service import CampaignService
+from app.services.template_service import TemplateService, SUPPORTED_VARIABLES
 from app.utils.logger import logger
 
 class CampaignsPage(ctk.CTkFrame):
@@ -34,6 +35,12 @@ class CampaignsPage(ctk.CTkFrame):
         self._current_campaign_id: Optional[int] = None
         self._is_paused = False
 
+        # Message variations state for anti-restriction rotation
+        self._variants: List[str] = [
+            "Hello {{name}},\n\nThis is a notification regarding your batch {{batch}}.\n\nThank you!"
+        ]
+        self._active_variant_index: int = 0
+
         self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
@@ -56,14 +63,14 @@ class CampaignsPage(ctk.CTkFrame):
 
         subtitle = ctk.CTkLabel(
             header,
-            text="Configure outbound student campaigns, enforce consent compliance, and audit message delivery",
+            text="Configure outbound student campaigns, enforce anti-restriction rotation, and audit live delivery",
             font=theme.FONT_BODY_MD,
             text_color=theme.COLOR_TEXT_MUTED,
             anchor="w",
         )
         subtitle.pack(anchor="w")
 
-        # Main content tabview or wizard steps
+        # Main content tabview
         self.tabview = ctk.CTkTabview(
             self,
             fg_color=theme.COLOR_CARD,
@@ -85,20 +92,31 @@ class CampaignsPage(ctk.CTkFrame):
         tab = self.tab_wizard
         tab.grid_columnconfigure(0, weight=1)
         tab.grid_columnconfigure(1, weight=1)
-        tab.grid_rowconfigure(1, weight=1)
+        tab.grid_rowconfigure(0, weight=1)
 
-        # Left Column: Campaign Details & Template Picker
+        # Left Column: Campaign Setup & Message Variations Studio
         details_box = ctk.CTkFrame(tab, fg_color="transparent")
-        details_box.grid(row=0, column=0, rowspan=2, padx=(12, 8), pady=12, sticky="nsew")
+        details_box.grid(row=0, column=0, padx=(12, 8), pady=12, sticky="nsew")
         details_box.grid_columnconfigure(1, weight=1)
+        details_box.grid_rowconfigure(3, weight=1)
 
-        ctk.CTkLabel(details_box, text="CAMPAIGN SETUP", font=theme.FONT_HEADLINE_SM, text_color=theme.COLOR_TEXT_MUTED).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
+        ctk.CTkLabel(
+            details_box,
+            text="CAMPAIGN SETUP",
+            font=theme.FONT_HEADLINE_SM,
+            text_color=theme.COLOR_TEXT_MUTED,
+        ).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 8))
 
         # Campaign Name
-        ctk.CTkLabel(details_box, text="Campaign Name:", font=theme.FONT_BODY_MD, text_color=theme.COLOR_TEXT).grid(row=1, column=0, sticky="w", pady=6)
+        ctk.CTkLabel(
+            details_box,
+            text="Campaign Name:",
+            font=theme.FONT_BODY_MD,
+            text_color=theme.COLOR_TEXT,
+        ).grid(row=1, column=0, sticky="w", pady=6)
         self.camp_name_entry = ctk.CTkEntry(
             details_box,
-            placeholder_text="e.g. Midterm Results Notification",
+            placeholder_text="e.g. Midterm Results Announcement",
             height=34,
             corner_radius=6,
             fg_color=theme.COLOR_SIDEBAR,
@@ -107,7 +125,12 @@ class CampaignsPage(ctk.CTkFrame):
         self.camp_name_entry.grid(row=1, column=1, sticky="ew", padx=(8, 0), pady=6)
 
         # Template Selection Dropdown
-        ctk.CTkLabel(details_box, text="Message Template:", font=theme.FONT_BODY_MD, text_color=theme.COLOR_TEXT).grid(row=2, column=0, sticky="w", pady=6)
+        ctk.CTkLabel(
+            details_box,
+            text="Load Saved Template:",
+            font=theme.FONT_BODY_MD,
+            text_color=theme.COLOR_TEXT,
+        ).grid(row=2, column=0, sticky="w", pady=6)
         self.template_var = tk.StringVar(value="(Select Template)")
         self.template_menu = ctk.CTkOptionMenu(
             details_box,
@@ -121,11 +144,104 @@ class CampaignsPage(ctk.CTkFrame):
         )
         self.template_menu.grid(row=2, column=1, sticky="ew", padx=(8, 0), pady=6)
 
-        # Template Body preview/editor
-        ctk.CTkLabel(details_box, text="Message Body:", font=theme.FONT_BODY_MD, text_color=theme.COLOR_TEXT).grid(row=3, column=0, sticky="nw", pady=(10, 0))
-        self.msg_body_text = ctk.CTkTextbox(
+        # Message Variations Studio (Anti-Restriction Rotation)
+        var_card = ctk.CTkFrame(
             details_box,
-            height=200,
+            fg_color=theme.COLOR_CARD,
+            border_width=1,
+            border_color=theme.COLOR_BORDER,
+            corner_radius=8,
+        )
+        var_card.grid(row=3, column=0, columnspan=2, sticky="nsew", pady=(10, 0))
+        var_card.grid_columnconfigure(0, weight=1)
+        var_card.grid_rowconfigure(4, weight=1)
+
+        # Card Header with shield badge
+        card_hdr = ctk.CTkFrame(var_card, fg_color="transparent")
+        card_hdr.grid(row=0, column=0, padx=12, pady=(10, 4), sticky="ew")
+        card_hdr.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(
+            card_hdr,
+            text="🛡️ MESSAGE VARIATIONS (Anti-Restriction)",
+            font=theme.FONT_HEADLINE_SM,
+            text_color=theme.COLOR_PRIMARY,
+        ).grid(row=0, column=0, sticky="w")
+
+        self.var_count_badge = ctk.CTkLabel(
+            card_hdr,
+            text="1 SMS Type Configured",
+            font=theme.FONT_BODY_SM,
+            text_color=theme.COLOR_TEXT_MUTED,
+        )
+        self.var_count_badge.grid(row=0, column=1, sticky="e")
+
+        # Rotation policy explanation
+        ctk.CTkLabel(
+            var_card,
+            text="Provide 3, 4, or 5 SMS types. Messages cycle sequentially across students (Student 1 → SMS 1, Student 2 → SMS 2...) to prevent WhatsApp spam bans.",
+            font=theme.FONT_CAPTION,
+            text_color=theme.COLOR_TEXT_MUTED,
+            justify="left",
+            wraplength=380,
+        ).grid(row=1, column=0, padx=12, pady=(0, 6), sticky="w")
+
+        # Variation Selector Tabs Bar
+        self.tabs_bar = ctk.CTkFrame(var_card, fg_color=theme.COLOR_SIDEBAR, corner_radius=6)
+        self.tabs_bar.grid(row=2, column=0, padx=12, pady=4, sticky="ew")
+
+        # Variable insertion toolbar & active variant label
+        toolbar = ctk.CTkFrame(var_card, fg_color="transparent")
+        toolbar.grid(row=3, column=0, padx=12, pady=(6, 4), sticky="ew")
+
+        self.active_var_label = ctk.CTkLabel(
+            toolbar,
+            text="Editing SMS #1 (Primary)",
+            font=theme.FONT_HEADLINE_SM,
+            text_color=theme.COLOR_TEXT,
+        )
+        self.active_var_label.pack(side="left", padx=(0, 10))
+
+        # Variable tags
+        for var in sorted(list(SUPPORTED_VARIABLES)):
+            tag = f"{{{{{var}}}}}"
+            btn_tag = ctk.CTkButton(
+                toolbar,
+                text=tag,
+                font=theme.FONT_CODE_SM,
+                fg_color=theme.COLOR_SIDEBAR,
+                hover_color=theme.COLOR_CARD_HOVER,
+                text_color=theme.COLOR_PRIMARY,
+                border_width=1,
+                border_color=theme.COLOR_BORDER,
+                height=24,
+                width=60,
+                corner_radius=4,
+                command=lambda v=tag: self._insert_variable_into_variant(v),
+            )
+            btn_tag.pack(side="left", padx=2)
+
+        # Spintax quick chip
+        btn_spin = ctk.CTkButton(
+            toolbar,
+            text="{Hi|Hello}",
+            font=theme.FONT_CODE_SM,
+            fg_color=theme.COLOR_SIDEBAR,
+            hover_color=theme.COLOR_CARD_HOVER,
+            text_color=theme.COLOR_INFO,
+            border_width=1,
+            border_color=theme.COLOR_BORDER,
+            height=24,
+            width=70,
+            corner_radius=4,
+            command=lambda: self._insert_variable_into_variant("{Hello|Hi|Greetings}"),
+        )
+        btn_spin.pack(side="left", padx=2)
+
+        # Message editor textbox
+        self.msg_body_text = ctk.CTkTextbox(
+            var_card,
+            height=150,
             fg_color=theme.COLOR_SIDEBAR,
             border_width=1,
             border_color=theme.COLOR_BORDER,
@@ -133,11 +249,38 @@ class CampaignsPage(ctk.CTkFrame):
             font=theme.FONT_BODY_MD,
             wrap="word",
         )
-        self.msg_body_text.grid(row=3, column=1, sticky="nsew", padx=(8, 0), pady=(10, 0))
+        self.msg_body_text.grid(row=4, column=0, padx=12, pady=(4, 6), sticky="nsew")
+        self.msg_body_text.bind("<KeyRelease>", lambda e: self._on_variant_text_changed())
+
+        # Footer status bar (char count + validation)
+        card_footer = ctk.CTkFrame(var_card, fg_color="transparent")
+        card_footer.grid(row=5, column=0, padx=12, pady=(0, 10), sticky="ew")
+        card_footer.grid_columnconfigure(0, weight=1)
+
+        self.var_status_label = ctk.CTkLabel(
+            card_footer,
+            text="✓ All placeholders valid",
+            font=theme.FONT_BODY_SM,
+            text_color=theme.COLOR_SUCCESS,
+            anchor="w",
+        )
+        self.var_status_label.grid(row=0, column=0, sticky="w")
+
+        self.var_char_label = ctk.CTkLabel(
+            card_footer,
+            text="0 characters",
+            font=theme.FONT_BODY_SM,
+            text_color=theme.COLOR_TEXT_MUTED,
+            anchor="e",
+        )
+        self.var_char_label.grid(row=0, column=1, sticky="e")
+
+        # Initial render of tabs
+        self._select_variant(0)
 
         # Right Column: Recipient Selection
         recipient_box = ctk.CTkFrame(tab, fg_color="transparent")
-        recipient_box.grid(row=0, column=1, rowspan=2, padx=(8, 12), pady=12, sticky="nsew")
+        recipient_box.grid(row=0, column=1, padx=(8, 12), pady=12, sticky="nsew")
         recipient_box.grid_rowconfigure(2, weight=1)
         recipient_box.grid_columnconfigure(0, weight=1)
 
@@ -145,7 +288,12 @@ class CampaignsPage(ctk.CTkFrame):
         rec_hdr = ctk.CTkFrame(recipient_box, fg_color="transparent")
         rec_hdr.grid(row=0, column=0, sticky="ew", pady=(0, 6))
 
-        ctk.CTkLabel(rec_hdr, text="SELECT RECIPIENTS", font=theme.FONT_HEADLINE_SM, text_color=theme.COLOR_TEXT_MUTED).pack(side="left")
+        ctk.CTkLabel(
+            rec_hdr,
+            text="SELECT RECIPIENTS",
+            font=theme.FONT_HEADLINE_SM,
+            text_color=theme.COLOR_TEXT_MUTED,
+        ).pack(side="left")
 
         btn_select_all = ctk.CTkButton(
             rec_hdr,
@@ -173,7 +321,12 @@ class CampaignsPage(ctk.CTkFrame):
         batch_strip = ctk.CTkFrame(recipient_box, fg_color="transparent")
         batch_strip.grid(row=1, column=0, sticky="ew", pady=(0, 6))
 
-        ctk.CTkLabel(batch_strip, text="Filter Batch:", font=theme.FONT_BODY_SM, text_color=theme.COLOR_TEXT_MUTED).pack(side="left", padx=(0, 6))
+        ctk.CTkLabel(
+            batch_strip,
+            text="Filter Batch:",
+            font=theme.FONT_BODY_SM,
+            text_color=theme.COLOR_TEXT_MUTED,
+        ).pack(side="left", padx=(0, 6))
         self.rec_batch_var = tk.StringVar(value="All Batches")
         self.rec_batch_menu = ctk.CTkOptionMenu(
             batch_strip,
@@ -266,18 +419,161 @@ class CampaignsPage(ctk.CTkFrame):
         self.monitor_progress.set(0)
         self.monitor_progress.grid(row=1, column=0, padx=16, pady=(0, 10), sticky="ew")
 
-        # Recipient status table
+        # Recipient status table showing which SMS Design was assigned
         queue_cols = [
-            ("id", "ID", 50),
-            ("student_name", "Student Name", 140),
-            ("phone", "Recipient Phone", 130),
-            ("status", "Status", 100),
+            ("id", "ID", 40),
+            ("student_name", "Student Name", 130),
+            ("phone", "Recipient Phone", 120),
+            ("sms_variant", "SMS Design", 90),
+            ("status", "Status", 90),
             ("error_message", "Result / Verification Detail", 240),
-            ("sent_at", "Sent Timestamp", 140),
+            ("sent_at", "Sent Timestamp", 130),
         ]
         self.queue_table = TableView(tab, columns=queue_cols)
         self.queue_table.grid(row=2, column=0, padx=16, pady=(0, 16), sticky="nsew")
 
+    # -------------------------------------------------------------
+    # Message Variations Management
+    # -------------------------------------------------------------
+    def _save_current_variant_text(self):
+        """Persists the editor text into the active variation index."""
+        if 0 <= self._active_variant_index < len(self._variants):
+            text = self.msg_body_text.get("1.0", tk.END).strip()
+            self._variants[self._active_variant_index] = text
+
+    def _select_variant(self, index: int):
+        """Switches the editor to a specific variation index."""
+        self._save_current_variant_text()
+        self._active_variant_index = max(0, min(index, len(self._variants) - 1))
+
+        self.msg_body_text.delete("1.0", tk.END)
+        self.msg_body_text.insert(tk.END, self._variants[self._active_variant_index])
+
+        self._rebuild_variant_tabs()
+        self._on_variant_text_changed()
+
+    def _add_variant(self):
+        """Adds a new SMS variation (up to 10)."""
+        self._save_current_variant_text()
+        if len(self._variants) >= 10:
+            messagebox.showwarning("Limit Reached", "You can configure up to 10 message variations.")
+            return
+
+        starters = [
+            "Hello {{name}},\n\nUpdate regarding your batch {{batch}}.\n\nBest regards!",
+            "Hi {{name}},\n\nFriendly reminder for your {{batch}} session.\n\nThank you!",
+            "Greetings {{name}},\n\nImportant announcement for batch {{batch}}.\n\nRegards!",
+            "Dear {{name}},\n\nPlease check the schedule for {{batch}}.\n\nThanks!",
+        ]
+        next_num = len(self._variants) + 1
+        new_text = starters[(next_num - 1) % len(starters)]
+        self._variants.append(new_text)
+        self._select_variant(len(self._variants) - 1)
+
+    def _remove_variant(self):
+        """Removes the currently active variation."""
+        self._save_current_variant_text()
+        if len(self._variants) <= 1:
+            messagebox.showwarning("Cannot Remove", "You must keep at least one message variation.")
+            return
+
+        self._variants.pop(self._active_variant_index)
+        self._active_variant_index = max(0, min(self._active_variant_index, len(self._variants) - 1))
+        self._select_variant(self._active_variant_index)
+
+    def _rebuild_variant_tabs(self):
+        """Re-renders tab buttons for all variations."""
+        for widget in self.tabs_bar.winfo_children():
+            widget.destroy()
+
+        for idx in range(len(self._variants)):
+            is_active = (idx == self._active_variant_index)
+            btn = ctk.CTkButton(
+                self.tabs_bar,
+                text=f"SMS #{idx + 1}",
+                width=66,
+                height=26,
+                corner_radius=4,
+                font=theme.FONT_HEADLINE_SM if is_active else theme.FONT_BODY_SM,
+                fg_color=theme.COLOR_PRIMARY if is_active else theme.COLOR_SIDEBAR,
+                hover_color=theme.COLOR_PRIMARY_HOVER if is_active else theme.COLOR_CARD_HOVER,
+                text_color="#0F1115" if is_active else theme.COLOR_TEXT,
+                command=lambda i=idx: self._select_variant(i),
+            )
+            btn.pack(side="left", padx=2, pady=3)
+
+        btn_add = ctk.CTkButton(
+            self.tabs_bar,
+            text="+ Add SMS",
+            width=76,
+            height=26,
+            corner_radius=4,
+            font=theme.FONT_BODY_SM,
+            fg_color=theme.COLOR_CARD_HOVER,
+            hover_color=theme.COLOR_BORDER,
+            text_color=theme.COLOR_PRIMARY,
+            command=self._add_variant,
+        )
+        btn_add.pack(side="left", padx=4, pady=3)
+
+        if len(self._variants) > 1:
+            btn_rem = ctk.CTkButton(
+                self.tabs_bar,
+                text="🗑",
+                width=30,
+                height=26,
+                corner_radius=4,
+                font=theme.FONT_BODY_SM,
+                fg_color=theme.COLOR_SIDEBAR,
+                hover_color=theme.COLOR_DANGER,
+                text_color=theme.COLOR_DANGER,
+                command=self._remove_variant,
+            )
+            btn_rem.pack(side="left", padx=2, pady=3)
+
+        count = len(self._variants)
+        plural = "s" if count != 1 else ""
+        self.var_count_badge.configure(
+            text=f"{count} SMS Type{plural} (Rotation Active)" if count > 1 else "1 SMS Type (Single)"
+        )
+        self.active_var_label.configure(
+            text=f"Editing SMS #{self._active_variant_index + 1} of {count}"
+        )
+
+    def _insert_variable_into_variant(self, tag: str):
+        """Inserts a variable placeholder or spintax tag at current cursor."""
+        self.msg_body_text.insert(tk.INSERT, tag)
+        self._on_variant_text_changed()
+
+    def _on_variant_text_changed(self):
+        """Updates validation feedback and char counter for active variation."""
+        text = self.msg_body_text.get("1.0", tk.END).strip()
+        if 0 <= self._active_variant_index < len(self._variants):
+            self._variants[self._active_variant_index] = text
+
+        is_valid, found, unknown = TemplateService.validate_template(text)
+        chars = len(text)
+        self.var_char_label.configure(text=f"{chars} chars")
+
+        if unknown:
+            self.var_status_label.configure(
+                text=f"⚠️ Unknown tag: {', '.join(unknown)}",
+                text_color=theme.COLOR_WARNING,
+            )
+        elif not text:
+            self.var_status_label.configure(
+                text="Template content is empty.",
+                text_color=theme.COLOR_TEXT_MUTED,
+            )
+        else:
+            self.var_status_label.configure(
+                text=f"✓ Active tags: {', '.join(found) if found else 'none'}",
+                text_color=theme.COLOR_SUCCESS,
+            )
+
+    # -------------------------------------------------------------
+    # Recipient Selection & Templates
+    # -------------------------------------------------------------
     def refresh(self):
         """Loads available templates and reload recipient candidates."""
         templates = self.templates_repo.get_all()
@@ -308,22 +604,40 @@ class CampaignsPage(ctk.CTkFrame):
         templates = self.templates_repo.get_all()
         for t in templates:
             if t["template_name"] == choice:
-                self.msg_body_text.delete("1.0", tk.END)
-                self.msg_body_text.insert(tk.END, t["content"])
+                variants_list = t.get("variants_list")
+                if variants_list and len(variants_list) > 0:
+                    self._variants = [v for v in variants_list if v.strip()]
+                else:
+                    self._variants = [t["content"]] if t.get("content") else [""]
+                self._select_variant(0)
                 break
 
+    # -------------------------------------------------------------
+    # Review & Confirmation Step
+    # -------------------------------------------------------------
     def _open_review_modal(self):
-        """Opens the review and explicit confirmation step."""
+        """Opens the review and explicit confirmation step with multi-variant preview."""
         camp_name = self.camp_name_entry.get().strip()
-        template_text = self.msg_body_text.get("1.0", tk.END).strip()
+        self._save_current_variant_text()
+
+        active_variants = [v.strip() for v in self._variants if v.strip()]
 
         if not camp_name:
             messagebox.showerror("Campaign Name Required", "Please enter a campaign name.")
             return
 
-        if not template_text:
-            messagebox.showerror("Template Required", "Please provide a message body for this campaign.")
+        if not active_variants:
+            messagebox.showerror("Template Required", "Please provide at least one message variation.")
             return
+
+        all_valid, all_found, all_unknown = TemplateService.validate_variants(active_variants)
+        if all_unknown:
+            proceed = messagebox.askyesno(
+                "Unknown Placeholders",
+                f"Unknown placeholder(s) detected: {', '.join(all_unknown)}.\nDo you still want to proceed?",
+            )
+            if not proceed:
+                return
 
         selected_records = self.picker_table.get_selected_records()
         if not selected_records:
@@ -332,8 +646,8 @@ class CampaignsPage(ctk.CTkFrame):
 
         student_ids = [r["id"] for r in selected_records]
 
-        # Stage recipients through the service layer (enforcing opt-out exclusion)
-        staging = self.campaign_service.stage_campaign_recipients(student_ids, template_text)
+        # Stage recipients with round-robin rotation across active variations
+        staging = self.campaign_service.stage_campaign_recipients(student_ids, variants=active_variants)
         eligible = staging["eligible_recipients"]
         opted_out = staging["excluded_opted_out"]
         unknown_consent_count = staging["unknown_consent_count"]
@@ -346,23 +660,48 @@ class CampaignsPage(ctk.CTkFrame):
             return
 
         # Modal Review & Confirmation Dialog
-        modal = ModalDialog(self.winfo_toplevel(), title="🔒 Campaign Review & Explicit Confirmation", width=620, height=480)
+        modal = ModalDialog(
+            self.winfo_toplevel(),
+            title="🔒 Campaign Review & Anti-Restriction Confirmation",
+            width=740,
+            height=640,
+        )
         body = modal.body_frame
 
-        # Review summary cards
+        # Top campaign summary
         ctk.CTkLabel(
             body,
             text=f"Campaign: {camp_name}",
             font=theme.FONT_HEADLINE_MD,
             text_color=theme.COLOR_PRIMARY,
             anchor="w",
-        ).pack(fill="x", pady=(0, 6))
+        ).pack(fill="x", pady=(0, 4))
 
         summary_box = ctk.CTkFrame(body, fg_color=theme.COLOR_CARD, border_width=1, border_color=theme.COLOR_BORDER, corner_radius=6)
-        summary_box.pack(fill="x", pady=8, padx=2)
+        summary_box.pack(fill="x", pady=6, padx=2)
 
-        ctk.CTkLabel(summary_box, text=f"Total Candidates Selected: {len(student_ids)}", font=theme.FONT_BODY_MD, text_color=theme.COLOR_TEXT).pack(anchor="w", padx=16, pady=(10, 2))
-        ctk.CTkLabel(summary_box, text=f"✓ Eligible Recipients Queue: {len(eligible)}", font=theme.FONT_HEADLINE_SM, text_color=theme.COLOR_SUCCESS).pack(anchor="w", padx=16, pady=2)
+        ctk.CTkLabel(
+            summary_box,
+            text=f"Total Candidates Selected: {len(student_ids)}  •  ✓ Eligible Queue: {len(eligible)}",
+            font=theme.FONT_BODY_MD,
+            text_color=theme.COLOR_TEXT,
+        ).pack(anchor="w", padx=14, pady=(8, 2))
+
+        # Anti-restriction rotation summary
+        v_count = len(active_variants)
+        rot_sub = f"Student 1 → SMS #1, Student 2 → SMS #2" + (f", Student 3 → SMS #3..." if v_count >= 3 else "...")
+        ctk.CTkLabel(
+            summary_box,
+            text=f"🛡️ Anti-Restriction Active: {v_count} SMS design{'s' if v_count != 1 else ''} configured",
+            font=theme.FONT_HEADLINE_SM,
+            text_color=theme.COLOR_SUCCESS,
+        ).pack(anchor="w", padx=14, pady=2)
+        ctk.CTkLabel(
+            summary_box,
+            text=f"Sequential Rotation Pattern: {rot_sub}",
+            font=theme.FONT_CAPTION,
+            text_color=theme.COLOR_TEXT_MUTED,
+        ).pack(anchor="w", padx=14, pady=(0, 8))
 
         if opted_out:
             ctk.CTkLabel(
@@ -370,48 +709,79 @@ class CampaignsPage(ctk.CTkFrame):
                 text=f"⛔ Excluded (Opted-Out): {len(opted_out)} student(s) automatically blocked by policy",
                 font=theme.FONT_BODY_SM,
                 text_color=theme.COLOR_DANGER,
-            ).pack(anchor="w", padx=16, pady=2)
+            ).pack(anchor="w", padx=14, pady=(0, 6))
 
         if unknown_consent_count > 0:
             warn_frame = ctk.CTkFrame(body, fg_color="#2D1F08", border_width=1, border_color=theme.COLOR_WARNING, corner_radius=6)
-            warn_frame.pack(fill="x", pady=6, padx=2)
+            warn_frame.pack(fill="x", pady=4, padx=2)
             ctk.CTkLabel(
                 warn_frame,
-                text=f"⚠️ Consent Warning: {unknown_consent_count} recipient(s) have 'unknown' consent status.\nEnsure you have a legal or institutional basis to message them.",
+                text=f"⚠️ Consent Warning: {unknown_consent_count} recipient(s) have 'unknown' consent status.",
                 font=theme.FONT_BODY_SM,
                 text_color=theme.COLOR_WARNING,
-                justify="left",
-            ).pack(anchor="w", padx=12, pady=8)
+            ).pack(anchor="w", padx=12, pady=6)
 
-        # Message sample preview
-        ctk.CTkLabel(body, text="Personalized Sample Preview:", font=theme.FONT_HEADLINE_SM, text_color=theme.COLOR_TEXT_MUTED).pack(anchor="w", pady=(8, 2))
-        preview_box = ctk.CTkTextbox(body, height=80, fg_color=theme.COLOR_SIDEBAR, font=theme.FONT_BODY_SM)
-        preview_box.insert(tk.END, eligible[0]["personalized_message"])
-        preview_box.configure(state="disabled")
-        preview_box.pack(fill="x", pady=(0, 10))
-
-        # Checkbox for explicit confirmation
-        confirm_var = tk.BooleanVar(value=False)
-        chk = ctk.CTkCheckBox(
+        # Multi-Student Live Rotation Preview
+        ctk.CTkLabel(
             body,
-            text="I explicitly confirm that these recipients and message content comply with messaging policies.",
+            text="Multi-Student Rotation Preview (How Students Receive Different Designs):",
+            font=theme.FONT_HEADLINE_SM,
+            text_color=theme.COLOR_TEXT_MUTED,
+        ).pack(anchor="w", pady=(6, 2))
+
+        preview_scroll = ctk.CTkScrollableFrame(body, height=170, fg_color=theme.COLOR_SIDEBAR, corner_radius=6)
+        preview_scroll.pack(fill="both", expand=True, pady=(0, 6))
+
+        sample_count = min(len(eligible), 4)
+        for i in range(sample_count):
+            rec = eligible[i]
+            card = ctk.CTkFrame(preview_scroll, fg_color=theme.COLOR_CARD, corner_radius=6, border_width=1, border_color=theme.COLOR_BORDER)
+            card.pack(fill="x", padx=6, pady=4)
+
+            hdr_line = ctk.CTkFrame(card, fg_color="transparent")
+            hdr_line.pack(fill="x", padx=10, pady=(6, 2))
+
+            ctk.CTkLabel(
+                hdr_line,
+                text=f"Student #{i + 1}: {rec['name']} ({rec['phone']})",
+                font=theme.FONT_HEADLINE_SM,
+                text_color=theme.COLOR_TEXT,
+            ).pack(side="left")
+
+            ctk.CTkLabel(
+                hdr_line,
+                text=f"➜  {rec['sms_variant']}",
+                font=theme.FONT_HEADLINE_SM,
+                text_color=theme.COLOR_PRIMARY,
+            ).pack(side="right")
+
+            txt_box = ctk.CTkTextbox(card, height=54, fg_color=theme.COLOR_SIDEBAR, font=theme.FONT_BODY_MD)
+            txt_box.insert(tk.END, rec["personalized_message"])
+            txt_box.configure(state="disabled")
+            txt_box.pack(fill="x", padx=10, pady=(0, 8))
+
+        # Checkbox for confirmation in the footer (guaranteed visible and pre-checked)
+        confirm_var = tk.BooleanVar(value=True)
+        chk = ctk.CTkCheckBox(
+            modal.footer_frame,
+            text="✓ I confirm recipient consent & compliance",
             variable=confirm_var,
             font=theme.FONT_BODY_SM,
             fg_color=theme.COLOR_PRIMARY,
             text_color=theme.COLOR_TEXT,
         )
-        chk.pack(anchor="w", pady=(4, 10))
+        chk.pack(side="left", padx=16, pady=10)
 
         def on_confirm_proceed():
-            if not confirm_var.get():
-                messagebox.showwarning("Confirmation Required", "You must check the explicit confirmation box before launching.")
-                return
+            # Clicking 'Confirm & Launch' represents explicit user confirmation
+            confirm_var.set(True)
 
             try:
-                # Create campaign and queue in database
+                # Create campaign and queue in database with all variants
                 camp_id, _ = self.campaign_service.create_campaign(
                     campaign_name=camp_name,
-                    template_text=template_text,
+                    template_text=active_variants[0],
+                    variants=active_variants,
                     template_id=None,
                     student_ids=student_ids,
                 )
@@ -422,7 +792,7 @@ class CampaignsPage(ctk.CTkFrame):
                 # Switch to monitor tab and start background execution
                 self._current_campaign_id = camp_id
                 self.monitor_camp_name.configure(
-                    text=f"Campaign #{camp_id}: {camp_name} (Confirmed: {confirmed_at[:19]})"
+                    text=f"Campaign #{camp_id}: {camp_name} ({v_count} SMS types rotating • Confirmed: {confirmed_at[:19]})"
                 )
                 self.tabview.set("2. Dispatch Monitor")
                 self._start_execution(camp_id)
@@ -434,6 +804,9 @@ class CampaignsPage(ctk.CTkFrame):
         modal.add_button("Cancel", command=modal.destroy, side="right")
         modal.add_button("✓ Confirm & Launch", command=on_confirm_proceed, is_primary=True, side="right")
 
+    # -------------------------------------------------------------
+    # Live Execution Monitor
+    # -------------------------------------------------------------
     def _start_execution(self, campaign_id: int):
         """Starts background worker and connects progress updates."""
         self._is_paused = False

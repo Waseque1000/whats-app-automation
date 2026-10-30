@@ -133,10 +133,11 @@ class WhatsAppWebProvider(BaseMessagingProvider):
 
         # Sanitize phone number (digits only, e.g. 8801700000000)
         digits_phone = "".join(ch for ch in phone if ch.isdigit())
-        if not digits_phone:
+        if not digits_phone or len(digits_phone) < 8:
+            logger.warning(f"Phone number '{phone}' has invalid digits. Skipping...")
             return ProviderMessageResult(
-                status=RecipientStatus.FAILED,
-                error_message=f"Invalid phone number digits: '{phone}'",
+                status=RecipientStatus.SKIPPED,
+                error_message=f"Invalid phone digits '{phone}' - no WhatsApp (Skipped).",
             )
 
         encoded_text = urllib.parse.quote(message)
@@ -147,13 +148,26 @@ class WhatsAppWebProvider(BaseMessagingProvider):
         try:
             self._page.goto(chat_url, wait_until="domcontentloaded", timeout=45000)
 
-            # Specific invalid phone URL popup selectors (do NOT use generic role=alert)
+            # Specific invalid phone URL popup selectors (number not on WhatsApp)
             invalid_text_selectors = [
                 "text='Phone number shared via url is invalid'",
                 "text='Phone number shared via url is invalid.'",
                 "text='The phone number shared via url is invalid'",
+                "text='The phone number shared via url is invalid.'",
                 "text='URL is invalid'",
+                "text='URL is invalid.'",
                 "[data-animate-modal-popup='true']:has-text('invalid')",
+                "[data-animate-modal-popup='true']:has-text('phone number')",
+                "div[role='dialog']:has-text('invalid')",
+                "div[role='dialog']:has-text('phone number')",
+                "div[role='dialog']:has-text('URL')",
+                "div[data-testid='popup-contents']:has-text('invalid')",
+                "text*='not registered on WhatsApp'",
+                "text*='isn\'t on WhatsApp'",
+                "text*='doesn\'t have an account'",
+                "text*='ফোন নম্বরটি অবৈধ'",
+                "text*='নম্বরটি অবৈধ'",
+                "text*='হোয়াটসঅ্যাপে নেই'",
             ]
 
             input_box_selectors = [
@@ -172,24 +186,45 @@ class WhatsAppWebProvider(BaseMessagingProvider):
                 "[data-testid='send']",
             ]
 
-            # Wait up to 30 seconds for chat box to load or invalid alert to show
+            # Wait up to 25 seconds for chat box to load or invalid alert to show
             send_clicked = False
             start_wait = time.time()
 
-            while time.time() - start_wait < 30:
-                # 1. Check for genuine invalid phone alert modal
+            while time.time() - start_wait < 25:
+                # 1. Check if number is not on WhatsApp (modal popup shown)
                 for inv_sel in invalid_text_selectors:
                     try:
                         alert_elem = self._page.locator(inv_sel).first
                         if alert_elem.is_visible():
-                            logger.warning(f"WhatsApp Web error: number {digits_phone} is not on WhatsApp or invalid.")
+                            logger.warning(f"WhatsApp Web: number {digits_phone} has no WhatsApp account. Skipping to next student...")
+                            # Dismiss alert dialog smoothly
+                            ok_selectors = [
+                                "button:has-text('OK')",
+                                "button:has-text('Ok')",
+                                "button:has-text('ঠিক আছে')",
+                                "div[role='dialog'] button",
+                                "[data-animate-modal-popup='true'] button",
+                                "button[data-testid='popup-controls-ok']",
+                            ]
+                            for ok_sel in ok_selectors:
+                                try:
+                                    btn = self._page.locator(ok_sel).first
+                                    if btn.is_visible():
+                                        btn.click(timeout=1500)
+                                        break
+                                except Exception:
+                                    pass
+
+                            # Press Escape as fallback to ensure modal is dismissed
                             try:
-                                self._page.locator("button:has-text('OK')").first.click(timeout=2000)
+                                self._page.keyboard.press("Escape")
                             except Exception:
                                 pass
+
+                            time.sleep(0.8)
                             return ProviderMessageResult(
-                                status=RecipientStatus.FAILED,
-                                error_message="Number is not registered on WhatsApp or URL is invalid.",
+                                status=RecipientStatus.SKIPPED,
+                                error_message="Number has no WhatsApp account (Skipped).",
                             )
                     except Exception:
                         pass
@@ -242,6 +277,26 @@ class WhatsAppWebProvider(BaseMessagingProvider):
                 time.sleep(1)
 
             if not send_clicked:
+                # Check if a dialog or alert is blocking (e.g., number not on WhatsApp)
+                has_dialog = False
+                try:
+                    has_dialog = (
+                        self._page.locator("div[role='dialog']").first.is_visible()
+                        or self._page.locator("[data-animate-modal-popup='true']").first.is_visible()
+                    )
+                except Exception:
+                    pass
+
+                if has_dialog:
+                    try:
+                        self._page.keyboard.press("Escape")
+                    except Exception:
+                        pass
+                    return ProviderMessageResult(
+                        status=RecipientStatus.SKIPPED,
+                        error_message="Number not reachable on WhatsApp (Skipped).",
+                    )
+
                 return ProviderMessageResult(
                     status=RecipientStatus.FAILED,
                     error_message="Could not locate send button or input box in WhatsApp Web.",

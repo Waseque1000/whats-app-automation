@@ -38,6 +38,14 @@ class MockProvider(BaseMessagingProvider):
         if self.simulate_latency_ms > 0:
             time.sleep(self.simulate_latency_ms / 1000.0)
 
+        # Allow test simulation of numbers not registered on WhatsApp (skip)
+        if phone.endswith("9999") or "nowhatsapp" in phone.lower() or "skip" in phone.lower():
+            logger.info(f"MockProvider: Simulating number not on WhatsApp for phone {phone} (Skipped)")
+            return ProviderMessageResult(
+                status=RecipientStatus.SKIPPED,
+                error_message="Number has no WhatsApp account (Skipped).",
+            )
+
         # Allow test simulation of failures via special test numbers
         if phone.endswith("0000") or "fail" in phone.lower():
             logger.warning(f"MockProvider: Simulating delivery failure for phone {phone}")

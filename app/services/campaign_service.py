@@ -2,7 +2,7 @@
 import threading
 import time
 from datetime import datetime
-from typing import Dict, Any, List, Optional, Callable, Tuple
+from typing import Dict, Any, List, Optional, Callable, Tuple, Union
 
 from app.messaging.base import BaseMessagingProvider, RecipientStatus, ProviderMessageResult
 from app.services.template_service import TemplateService
@@ -30,11 +30,13 @@ class CampaignService:
     def stage_campaign_recipients(
         self,
         student_ids: List[int],
-        template_text: str,
+        template_text: Union[str, List[str]] = "",
+        variants: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Filters candidates, strictly excludes opted-out students in the service layer,
-        identifies unknown-consent students for UI warning, and generates personalized messages.
+        identifies unknown-consent students for UI warning, and generates personalized messages
+        by rotating sequentially through configured message variations (anti-restriction rotation).
 
         Returns:
             {
@@ -42,8 +44,14 @@ class CampaignService:
                 "excluded_opted_out": List[Dict[str, Any]],
                 "unknown_consent_count": int,
                 "total_selected": int,
+                "variants": List[str],
             }
         """
+        var_source = variants if variants is not None else template_text
+        cleaned_variants = TemplateService.clean_variants(var_source)
+        if not cleaned_variants:
+            raise ValueError("At least one non-empty message template/variation is required.")
+
         students = self.students_repo.get_by_ids(student_ids)
 
         eligible: List[Dict[str, Any]] = []
@@ -62,14 +70,23 @@ class CampaignService:
             if consent == "unknown":
                 unknown_consent_count += 1
 
-            # Render message
-            msg = TemplateService.render(template_text, s)
+            # Anti-restriction round-robin sequential rotation across message designs:
+            # Student 1 -> Variant 0
+            # Student 2 -> Variant 1
+            # Student 3 -> Variant 2
+            # ...
+            variant_idx = len(eligible) % len(cleaned_variants)
+            chosen_template = cleaned_variants[variant_idx]
+            msg = TemplateService.render(chosen_template, s)
+
             eligible.append({
                 "student_id": s["id"],
                 "phone": s["phone"],
                 "name": s["name"],
                 "consent_status": s["consent_status"],
                 "personalized_message": msg,
+                "variant_index": variant_idx,
+                "sms_variant": f"SMS #{variant_idx + 1}",
                 "status": RecipientStatus.PENDING.value,
             })
 
@@ -78,37 +95,47 @@ class CampaignService:
             "excluded_opted_out": opted_out,
             "unknown_consent_count": unknown_consent_count,
             "total_selected": len(students),
+            "variants": cleaned_variants,
         }
 
     def create_campaign(
         self,
         campaign_name: str,
-        template_text: str,
-        template_id: Optional[int],
-        student_ids: List[int],
+        template_text: Union[str, List[str]] = "",
+        template_id: Optional[int] = None,
+        student_ids: Optional[List[int]] = None,
+        variants: Optional[List[str]] = None,
     ) -> Tuple[int, Dict[str, Any]]:
         """
-        Creates a draft campaign with verified eligible recipients.
-        Throws ValueError if no eligible recipients or name is empty.
+        Creates a draft campaign with verified eligible recipients and rotated message variations.
+        Throws ValueError if no eligible recipients, empty name, or empty templates.
         """
         if not campaign_name.strip():
             raise ValueError("Campaign name cannot be empty.")
 
-        staging = self.stage_campaign_recipients(student_ids, template_text)
+        ids = student_ids or []
+        staging = self.stage_campaign_recipients(ids, template_text, variants=variants)
         eligible = staging["eligible_recipients"]
+        used_variants = staging["variants"]
 
         if not eligible:
             raise ValueError("Cannot create campaign: no eligible recipients (students may be opted-out or empty).")
 
+        primary_template = used_variants[0] if used_variants else (template_text if isinstance(template_text, str) else "")
+
         campaign_id = self.campaigns_repo.create(
             name=campaign_name,
-            message_template=template_text,
+            message_template=primary_template,
             template_id=template_id,
             total_recipients=len(eligible),
+            variants=used_variants,
         )
 
         self.campaigns_repo.add_recipients(campaign_id, eligible)
-        logger.info(f"Created campaign #{campaign_id} '{campaign_name}' with {len(eligible)} recipients.")
+        logger.info(
+            f"Created campaign #{campaign_id} '{campaign_name}' with {len(eligible)} recipients "
+            f"rotating across {len(used_variants)} message variations."
+        )
         return campaign_id, staging
 
     def confirm_and_queue_campaign(
@@ -234,8 +261,22 @@ class CampaignService:
 
                 if result.status in (RecipientStatus.SENT, RecipientStatus.SUBMITTED):
                     successful += 1
+                    student_id = r.get("student_id")
+                    if student_id and r.get("whatsapp_status") != "active":
+                        self.students_repo.update_student(
+                            student_id=student_id,
+                            whatsapp_status="active",
+                        )
                 elif result.status == RecipientStatus.SKIPPED:
                     skipped += 1
+                    # Student has no WhatsApp: record in students table and seamlessly skip to next
+                    student_id = r.get("student_id")
+                    if student_id:
+                        self.students_repo.update_student(
+                            student_id=student_id,
+                            whatsapp_status="inactive",
+                        )
+                        logger.info(f"Student #{student_id} has no WhatsApp. Number skipped, continuing to next student.")
                 else:
                     failed += 1
 

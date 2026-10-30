@@ -1,5 +1,6 @@
 """Repository layer for SQLite database access."""
 import sqlite3
+import json
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 from app.utils.logger import logger
@@ -46,6 +47,12 @@ class ImportsRepository(Repository):
 
 class StudentsRepository(Repository):
     """Repository for student records and filtering."""
+
+    def get_by_id(self, student_id: int) -> Optional[Dict[str, Any]]:
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT * FROM students WHERE id = ?;", (student_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
 
     def find_by_phone(self, phone: str) -> Optional[Dict[str, Any]]:
         cursor = self.conn.cursor()
@@ -237,26 +244,44 @@ class StudentsRepository(Repository):
 class TemplatesRepository(Repository):
     """Repository for message templates."""
 
-    def create(self, name: str, content: str, variables: str = "") -> int:
+    def create(
+        self,
+        name: str,
+        content: str,
+        variables: str = "",
+        variants: Optional[List[str]] = None,
+    ) -> int:
         cursor = self.conn.cursor()
+        variants_json = json.dumps(variants) if variants else None
+        # Default content to first variant if empty
+        actual_content = content.strip() if content.strip() else (variants[0].strip() if variants else "")
         cursor.execute(
             """
-            INSERT INTO templates (template_name, content, available_variables)
-            VALUES (?, ?, ?);
+            INSERT INTO templates (template_name, content, available_variables, variants)
+            VALUES (?, ?, ?, ?);
             """,
-            (name.strip(), content.strip(), variables.strip()),
+            (name.strip(), actual_content, variables.strip(), variants_json),
         )
         self.conn.commit()
         return cursor.lastrowid
 
-    def update(self, template_id: int, name: str, content: str, variables: str = "") -> None:
+    def update(
+        self,
+        template_id: int,
+        name: str,
+        content: str,
+        variables: str = "",
+        variants: Optional[List[str]] = None,
+    ) -> None:
+        variants_json = json.dumps(variants) if variants else None
+        actual_content = content.strip() if content.strip() else (variants[0].strip() if variants else "")
         self.conn.execute(
             """
             UPDATE templates
-            SET template_name = ?, content = ?, available_variables = ?, updated_at = CURRENT_TIMESTAMP
+            SET template_name = ?, content = ?, available_variables = ?, variants = ?, updated_at = CURRENT_TIMESTAMP
             WHERE id = ?;
             """,
-            (name.strip(), content.strip(), variables.strip(), template_id),
+            (name.strip(), actual_content, variables.strip(), variants_json, template_id),
         )
         self.conn.commit()
 
@@ -267,13 +292,34 @@ class TemplatesRepository(Repository):
     def get_all(self) -> List[Dict[str, Any]]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM templates ORDER BY template_name ASC;")
-        return [dict(row) for row in cursor.fetchall()]
+        items = []
+        for row in cursor.fetchall():
+            d = dict(row)
+            if d.get("variants"):
+                try:
+                    d["variants_list"] = json.loads(d["variants"])
+                except Exception:
+                    d["variants_list"] = [d["content"]] if d.get("content") else []
+            else:
+                d["variants_list"] = [d["content"]] if d.get("content") else []
+            items.append(d)
+        return items
 
     def get_by_id(self, template_id: int) -> Optional[Dict[str, Any]]:
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM templates WHERE id = ?;", (template_id,))
         row = cursor.fetchone()
-        return dict(row) if row else None
+        if not row:
+            return None
+        d = dict(row)
+        if d.get("variants"):
+            try:
+                d["variants_list"] = json.loads(d["variants"])
+            except Exception:
+                d["variants_list"] = [d["content"]] if d.get("content") else []
+        else:
+            d["variants_list"] = [d["content"]] if d.get("content") else []
+        return d
 
 class CampaignsRepository(Repository):
     """Repository for campaign creation, queues, and status audits."""
@@ -285,25 +331,27 @@ class CampaignsRepository(Repository):
         template_id: Optional[int],
         total_recipients: int,
         confirmed_at: Optional[str] = None,
+        variants: Optional[List[str]] = None,
     ) -> int:
         cursor = self.conn.cursor()
+        variants_json = json.dumps(variants) if variants else None
         cursor.execute(
             """
-            INSERT INTO campaigns (campaign_name, message_template, template_id, status, total_recipients, confirmed_at)
-            VALUES (?, ?, ?, 'draft', ?, ?);
+            INSERT INTO campaigns (campaign_name, message_template, template_id, status, total_recipients, confirmed_at, variants)
+            VALUES (?, ?, ?, 'draft', ?, ?, ?);
             """,
-            (name.strip(), message_template.strip(), template_id, total_recipients, confirmed_at),
+            (name.strip(), message_template.strip(), template_id, total_recipients, confirmed_at, variants_json),
         )
         self.conn.commit()
         return cursor.lastrowid
 
     def add_recipients(self, campaign_id: int, recipients: List[Dict[str, Any]]) -> None:
-        """Batch insert recipient queue records."""
+        """Batch insert recipient queue records with variant index tracking."""
         cursor = self.conn.cursor()
         cursor.executemany(
             """
-            INSERT INTO campaign_recipients (campaign_id, student_id, phone, personalized_message, status)
-            VALUES (?, ?, ?, ?, ?);
+            INSERT INTO campaign_recipients (campaign_id, student_id, phone, personalized_message, status, variant_index)
+            VALUES (?, ?, ?, ?, ?, ?);
             """,
             [
                 (
@@ -312,6 +360,7 @@ class CampaignsRepository(Repository):
                     r["phone"],
                     r["personalized_message"],
                     r.get("status", "pending"),
+                    r.get("variant_index", 0),
                 )
                 for r in recipients
             ],
@@ -380,7 +429,17 @@ class CampaignsRepository(Repository):
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM campaigns WHERE id = ?;", (campaign_id,))
         row = cursor.fetchone()
-        return dict(row) if row else None
+        if not row:
+            return None
+        d = dict(row)
+        if d.get("variants"):
+            try:
+                d["variants_list"] = json.loads(d["variants"])
+            except Exception:
+                d["variants_list"] = [d["message_template"]] if d.get("message_template") else []
+        else:
+            d["variants_list"] = [d["message_template"]] if d.get("message_template") else []
+        return d
 
     def get_campaigns(self, limit: int = 50) -> List[Dict[str, Any]]:
         cursor = self.conn.cursor()
@@ -388,7 +447,18 @@ class CampaignsRepository(Repository):
             "SELECT * FROM campaigns ORDER BY id DESC LIMIT ?;",
             (limit,),
         )
-        return [dict(row) for row in cursor.fetchall()]
+        items = []
+        for row in cursor.fetchall():
+            d = dict(row)
+            if d.get("variants"):
+                try:
+                    d["variants_list"] = json.loads(d["variants"])
+                except Exception:
+                    d["variants_list"] = [d["message_template"]] if d.get("message_template") else []
+            else:
+                d["variants_list"] = [d["message_template"]] if d.get("message_template") else []
+            items.append(d)
+        return items
 
     def get_recipients(self, campaign_id: int) -> List[Dict[str, Any]]:
         cursor = self.conn.cursor()
@@ -402,7 +472,13 @@ class CampaignsRepository(Repository):
             """,
             (campaign_id,),
         )
-        return [dict(row) for row in cursor.fetchall()]
+        items = []
+        for row in cursor.fetchall():
+            d = dict(row)
+            v_idx = d.get("variant_index") or 0
+            d["sms_variant"] = f"SMS #{v_idx + 1}"
+            items.append(d)
+        return items
 
     def get_stats(self) -> Dict[str, Any]:
         cursor = self.conn.cursor()

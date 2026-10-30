@@ -98,5 +98,14 @@ MIGRATIONS = [
         INSERT OR IGNORE INTO settings (key, value) VALUES ('confirm_each_campaign', 'true');
         INSERT OR IGNORE INTO settings (key, value) VALUES ('theme', 'dark');
         """
-    )
+    ),
+    (
+        2,
+        """
+        -- Add support for message variations and anti-ban rotation
+        ALTER TABLE templates ADD COLUMN variants TEXT;
+        ALTER TABLE campaigns ADD COLUMN variants TEXT;
+        ALTER TABLE campaign_recipients ADD COLUMN variant_index INTEGER DEFAULT 0;
+        """
+    ),
 ]

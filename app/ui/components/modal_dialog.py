@@ -18,7 +18,8 @@ class ModalDialog(ctk.CTkToplevel):
         self.title(title)
         self.geometry(f"{width}x{height}")
         self.configure(fg_color=theme.COLOR_BACKGROUND)
-        self.resizable(False, False)
+        self.resizable(True, True)
+        self.minsize(width, height)
 
         # Center relative to parent
         self.transient(parent)
