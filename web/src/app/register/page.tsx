@@ -13,10 +13,9 @@ import {
   ArrowRight,
   AlertCircle,
   CheckCircle2,
-  Sparkles,
-  Check
+  Sparkles
 } from "lucide-react";
-import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -32,7 +31,6 @@ export default function RegisterPage() {
   const [successMsg, setSuccessMsg] = useState("");
 
   const supabase = createClient();
-  const configured = isSupabaseConfigured();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,12 +39,7 @@ export default function RegisterPage() {
       return;
     }
 
-    setIsLoading(true);
-    setErrorMsg("");
-    setSuccessMsg("");
-
     try {
-      // Direct access mode: Registration is inactive for testing
       setIsLoading(true);
       setSuccessMsg("Direct access enabled! Entering workspace...");
       setTimeout(() => {
@@ -62,59 +55,56 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#060911] text-slate-100 flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden selection:bg-emerald-500 selection:text-slate-950">
-      {/* Ambient background glows */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-emerald-500/12 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-10 left-10 w-[350px] h-[250px] bg-cyan-500/10 rounded-full blur-[130px] pointer-events-none" />
-
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden selection:bg-emerald-500 selection:text-white">
       {/* Brand Header */}
       <div className="mb-6 text-center space-y-2 relative z-10">
         <Link href="/" className="inline-flex items-center gap-2.5 mb-1 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/25 group-hover:scale-105 transition-transform">
-            <MessageSquare className="w-5 h-5 fill-slate-950 text-slate-950" />
+          <div className="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-md shadow-emerald-600/20 group-hover:scale-105 transition-transform">
+            <MessageSquare className="w-5 h-5 fill-white text-white" />
           </div>
-          <span className="font-extrabold text-2xl tracking-tight text-white">
-            WhatsPulse <span className="text-xs uppercase font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">SaaS</span>
+          <span className="font-extrabold text-2xl tracking-tight text-slate-900">
+            WhatsPulse <span className="text-xs uppercase font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">SaaS</span>
           </span>
         </Link>
-        <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
           Create Your Academy / Business Account
         </h1>
-        <p className="text-xs text-slate-400 max-w-sm">
+        <p className="text-xs text-slate-500 max-w-sm">
           Start broadcasting with multi-variant anti-restriction rotation and automatic invalid number skipping.
         </p>
       </div>
 
       {/* Main Glassmorphic Auth Card */}
-      <div className="w-full max-w-lg glass-panel rounded-3xl p-8 border border-slate-800 shadow-2xl relative z-10 space-y-6">
-        <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs space-y-2 text-slate-300">
-          <div className="flex items-center gap-1.5 font-bold text-emerald-400">
-            <Sparkles className="w-4 h-4" />
+      <div className="w-full max-w-lg bg-white rounded-3xl p-8 border border-slate-200 shadow-xl relative z-10 space-y-6">
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs space-y-2 text-slate-700">
+          <div className="flex items-center gap-1.5 font-bold text-emerald-800">
+            <Sparkles className="w-4 h-4 text-emerald-600" />
             <span>Direct Access Mode (Registration Inactive)</span>
           </div>
-          <p className="text-[11px] text-slate-400 leading-relaxed">
+          <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
             Registration is currently bypassed for testing. You can jump directly into your workspace.
           </p>
           <Link
             href="/app"
-            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow transition-all"
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow transition-all"
           >
             <span>Enter Dashboard Directly</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
+
         {/* Error Alert */}
         {errorMsg && (
-          <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-500/30 text-xs text-red-300 flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+          <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
             <span>{errorMsg}</span>
           </div>
         )}
 
         {/* Success Alert */}
         {successMsg && (
-          <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-300 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
             <span>{successMsg}</span>
           </div>
         )}
@@ -122,55 +112,55 @@ export default function RegisterPage() {
         <form onSubmit={handleRegister} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div className="space-y-1.5">
-              <label className="text-slate-300 font-medium block">Full Name</label>
+              <label className="text-slate-700 font-bold block">Full Name</label>
               <div className="relative">
-                <User className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   required
                   placeholder="Waseque Ahmed"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-3.5 py-2.5 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-slate-300 font-medium block">Academy / Business Name</label>
+              <label className="text-slate-700 font-bold block">Academy / Business Name</label>
               <div className="relative">
-                <Building className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Building className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   required
                   placeholder="Durber Coaching"
                   value={organization}
                   onChange={(e) => setOrganization(e.target.value)}
-                  className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-3.5 py-2.5 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-3.5 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
                 />
               </div>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-slate-300 font-medium block">Work Email Address</label>
+            <label className="text-slate-700 font-bold block">Work Email Address</label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="email"
                 required
                 placeholder="waseque@durber.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-slate-300 font-medium block">Create Password</label>
+            <label className="text-slate-700 font-bold block">Create Password</label>
             <div className="relative">
-              <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="password"
                 required
@@ -178,96 +168,75 @@ export default function RegisterPage() {
                 placeholder="Minimum 6 characters"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition-colors font-mono"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:bg-white transition-colors font-mono"
               />
             </div>
           </div>
 
           {/* Select Tier Plan */}
           <div className="space-y-2 pt-1">
-            <label className="text-slate-300 font-medium block">Selected SaaS Tier</label>
+            <label className="text-slate-700 font-bold block">Selected SaaS Tier</label>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setSelectedPlan("starter")}
-                className={`p-3 rounded-xl border text-left transition-all ${
+                className={`p-3 rounded-2xl border text-left transition-all ${
                   selectedPlan === "starter"
-                    ? "bg-emerald-950/40 border-emerald-500 text-white shadow-md shadow-emerald-500/10"
-                    : "bg-slate-950/80 border-slate-850 text-slate-400 hover:text-white"
+                    ? "bg-emerald-50 border-emerald-500 text-slate-900 shadow-sm"
+                    : "bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <div className="font-bold text-xs">Starter</div>
-                <div className="text-[11px] text-emerald-400 font-mono mt-0.5">$19/mo</div>
+                <div className="font-bold text-xs text-slate-900">Starter</div>
+                <div className="text-[11px] text-emerald-700 font-mono font-bold mt-0.5">$19/mo</div>
                 <div className="text-[10px] text-slate-500 mt-1">3k msgs</div>
               </button>
 
               <button
                 type="button"
                 onClick={() => setSelectedPlan("pro")}
-                className={`p-3 rounded-xl border text-left relative transition-all ${
+                className={`p-3 rounded-2xl border text-left relative transition-all ${
                   selectedPlan === "pro"
-                    ? "bg-emerald-950/40 border-emerald-500 text-white shadow-md shadow-emerald-500/10"
-                    : "bg-slate-950/80 border-slate-850 text-slate-400 hover:text-white"
+                    ? "bg-emerald-50 border-emerald-500 text-slate-900 shadow-sm"
+                    : "bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded bg-emerald-500 text-slate-950 text-[9px] font-extrabold uppercase">
+                <span className="absolute -top-2 right-2 px-1.5 py-0.2 rounded bg-emerald-600 text-white text-[9px] font-extrabold uppercase">
                   Popular
                 </span>
-                <div className="font-bold text-xs">Pro Academy</div>
-                <div className="text-[11px] text-emerald-400 font-mono mt-0.5">$49/mo</div>
+                <div className="font-bold text-xs text-slate-900">Pro Academy</div>
+                <div className="text-[11px] text-emerald-700 font-mono font-bold mt-0.5">$49/mo</div>
                 <div className="text-[10px] text-slate-500 mt-1">25k msgs</div>
               </button>
 
               <button
                 type="button"
                 onClick={() => setSelectedPlan("agency")}
-                className={`p-3 rounded-xl border text-left transition-all ${
+                className={`p-3 rounded-2xl border text-left transition-all ${
                   selectedPlan === "agency"
-                    ? "bg-emerald-950/40 border-emerald-500 text-white shadow-md shadow-emerald-500/10"
-                    : "bg-slate-950/80 border-slate-850 text-slate-400 hover:text-white"
+                    ? "bg-emerald-50 border-emerald-500 text-slate-900 shadow-sm"
+                    : "bg-slate-50 border-slate-200 text-slate-600 hover:text-slate-900"
                 }`}
               >
-                <div className="font-bold text-xs">Agency</div>
-                <div className="text-[11px] text-emerald-400 font-mono mt-0.5">$99/mo</div>
+                <div className="font-bold text-xs text-slate-900">Agency</div>
+                <div className="text-[11px] text-emerald-700 font-mono font-bold mt-0.5">$99/mo</div>
                 <div className="text-[10px] text-slate-500 mt-1">100k msgs</div>
               </button>
             </div>
           </div>
 
-          {/* Consent Checkbox */}
-          <label className="flex items-start gap-2.5 pt-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={agreeTerms}
-              onChange={(e) => setAgreeTerms(e.target.checked)}
-              className="w-4 h-4 mt-0.5 rounded text-emerald-500 accent-emerald-500 bg-slate-900 border-slate-700 cursor-pointer"
-            />
-            <span className="text-[11px] text-slate-400 leading-snug">
-              I agree to the <span className="text-white underline">Terms of Service</span>, Privacy Policy, and WhatsApp anti-spam compliance guidelines.
-            </span>
-          </label>
-
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full mt-2 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.98] disabled:opacity-50"
+            className="w-full mt-2 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/25 transition-all flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.98]"
           >
-            <span>{isLoading ? "Creating Account..." : "Create Account & Start Free Trial"}</span>
+            <span>{isLoading ? "Entering Dashboard..." : "Enter Workspace (Direct Access)"}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
-
-        {/* Footer Link to Login */}
-        <div className="pt-2 text-center text-xs text-slate-400 border-t border-slate-850">
-          Already registered?{" "}
-          <Link href="/login" className="font-bold text-emerald-400 hover:text-emerald-300 underline">
-            Sign In Here
-          </Link>
-        </div>
       </div>
 
-      <div className="mt-8 flex items-center gap-2 text-xs text-slate-500">
-        <ShieldCheck className="w-4 h-4 text-emerald-500" />
+      <div className="mt-8 flex items-center gap-2 text-xs text-slate-500 font-medium">
+        <ShieldCheck className="w-4 h-4 text-emerald-600" />
         <span>Stored securely in your isolated Supabase multi-tenant database</span>
       </div>
     </div>

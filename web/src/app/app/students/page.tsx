@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import {
-  Users,
   Search,
   Filter,
   Plus,
@@ -10,8 +9,7 @@ import {
   Download,
   CheckCircle2,
   AlertCircle,
-  Trash2,
-  Check
+  Trash2
 } from "lucide-react";
 import { INITIAL_STUDENTS } from "../../../lib/mock-data";
 import { Student } from "../../../types";
@@ -89,13 +87,13 @@ export default function StudentsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
             <span>Contacts &amp; Student CRM</span>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">
               {students.length} Total
             </span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Manage your recipient directory. Invalid numbers are automatically tagged and skipped during dispatch.
           </p>
         </div>
@@ -103,21 +101,21 @@ export default function StudentsPage() {
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setImportModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-850 text-slate-300 font-semibold text-xs border border-slate-800 transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-200 shadow-sm transition-colors"
           >
             <Upload className="w-3.5 h-3.5" />
             <span>Import Excel/CSV</span>
           </button>
           <button
             onClick={handleExportCsv}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-850 text-slate-300 font-semibold text-xs border border-slate-800 transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-200 shadow-sm transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Export CSV</span>
           </button>
           <button
             onClick={() => setAddModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>Add Contact</span>
@@ -126,25 +124,25 @@ export default function StudentsPage() {
       </div>
 
       {/* Filter Bar */}
-      <div className="glass-panel p-4 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search by name, phone, or roll..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white"
           />
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Filter className="w-3.5 h-3.5 text-slate-500" />
-          <span className="text-xs text-slate-400">Batch:</span>
+          <Filter className="w-3.5 h-3.5 text-slate-400" />
+          <span className="text-xs text-slate-500 font-medium">Batch:</span>
           <select
             value={batchFilter}
             onChange={(e) => setBatchFilter(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-emerald-500"
+            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:border-emerald-500 font-semibold"
           >
             <option value="All">All Batches</option>
             <option value="Ass-7 Durber">Ass-7 Durber</option>
@@ -154,11 +152,11 @@ export default function StudentsPage() {
       </div>
 
       {/* Students Table */}
-      <div className="glass-panel rounded-2xl border border-slate-800 overflow-hidden">
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-slate-800 text-slate-400 font-semibold bg-slate-950/40">
+              <tr className="border-b border-slate-200 text-slate-500 font-bold bg-slate-50">
                 <th className="py-3 px-4">Name</th>
                 <th className="py-3 px-4">Phone Number</th>
                 <th className="py-3 px-4">Roll / ID</th>
@@ -167,24 +165,24 @@ export default function StudentsPage() {
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-850">
+            <tbody className="divide-y divide-slate-100">
               {filtered.map((st) => (
-                <tr key={st.id} className="hover:bg-slate-900/40 transition-colors">
-                  <td className="py-3.5 px-4 font-semibold text-white">{st.name}</td>
-                  <td className="py-3.5 px-4 font-mono text-slate-300">{st.phone}</td>
-                  <td className="py-3.5 px-4 font-mono text-slate-400">{st.roll || "—"}</td>
+                <tr key={st.id} className="hover:bg-slate-50/60 transition-colors">
+                  <td className="py-3.5 px-4 font-bold text-slate-900">{st.name}</td>
+                  <td className="py-3.5 px-4 font-mono text-slate-600">{st.phone}</td>
+                  <td className="py-3.5 px-4 font-mono text-slate-500">{st.roll || "—"}</td>
                   <td className="py-3.5 px-4">
-                    <span className="px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800 text-[11px]">
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-[11px] font-semibold">
                       {st.batch}
                     </span>
                   </td>
                   <td className="py-3.5 px-4">
                     {st.whatsappStatus === "active" ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold text-[10px] border border-emerald-500/20">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px] border border-emerald-200">
                         <CheckCircle2 className="w-3 h-3" /> Active Account
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-semibold text-[10px] border border-amber-500/20" title={st.notes}>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-bold text-[10px] border border-amber-200" title={st.notes}>
                         <AlertCircle className="w-3 h-3" /> No WhatsApp (Auto-Skipped)
                       </span>
                     )}
@@ -192,7 +190,7 @@ export default function StudentsPage() {
                   <td className="py-3.5 px-4 text-right">
                     <button
                       onClick={() => setStudents(students.filter(s => s.id !== st.id))}
-                      className="p-1 text-slate-500 hover:text-red-400 transition-colors"
+                      className="p-1 text-slate-400 hover:text-red-500 transition-colors"
                       title="Delete contact"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -207,52 +205,52 @@ export default function StudentsPage() {
 
       {/* Add Contact Modal */}
       {addModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-md rounded-2xl p-6 border border-slate-800 shadow-2xl space-y-4">
-            <h3 className="font-bold text-base text-white">Add New Contact</h3>
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl p-6 border border-slate-200 shadow-2xl space-y-4">
+            <h3 className="font-bold text-base text-slate-900">Add New Contact</h3>
             <form onSubmit={handleAddStudent} className="space-y-3 text-xs">
               <div>
-                <label className="text-slate-400 block mb-1">Student Full Name</label>
+                <label className="text-slate-600 font-medium block mb-1">Student Full Name</label>
                 <input
                   type="text"
                   required
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white"
                   placeholder="e.g. Asif Mahmud"
                 />
               </div>
 
               <div>
-                <label className="text-slate-400 block mb-1">WhatsApp Phone Number</label>
+                <label className="text-slate-600 font-medium block mb-1">WhatsApp Phone Number</label>
                 <input
                   type="text"
                   required
                   value={newPhone}
                   onChange={(e) => setNewPhone(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white font-mono"
                   placeholder="+88017XXXXXXXX"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 block mb-1">Roll / Student ID</label>
+                  <label className="text-slate-600 font-medium block mb-1">Roll / Student ID</label>
                   <input
                     type="text"
                     value={newRoll}
                     onChange={(e) => setNewRoll(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500 font-mono"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white font-mono"
                     placeholder="115"
                   />
                 </div>
                 <div>
-                  <label className="text-slate-400 block mb-1">Batch / Group</label>
+                  <label className="text-slate-600 font-medium block mb-1">Batch / Group</label>
                   <input
                     type="text"
                     value={newBatch}
                     onChange={(e) => setNewBatch(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-emerald-500 focus:bg-white"
                     placeholder="Batch-2026"
                   />
                 </div>
@@ -262,13 +260,13 @@ export default function StudentsPage() {
                 <button
                   type="button"
                   onClick={() => setAddModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-900 text-slate-400 hover:text-white"
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 hover:text-slate-900 font-bold"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold"
+                  className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold shadow-sm"
                 >
                   Save Contact
                 </button>
@@ -280,16 +278,16 @@ export default function StudentsPage() {
 
       {/* Import Modal */}
       {importModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="glass-panel w-full max-w-md rounded-2xl p-6 border border-slate-800 shadow-2xl space-y-4">
-            <h3 className="font-bold text-base text-white flex items-center gap-2">
-              <Upload className="w-4 h-4 text-emerald-400" />
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl p-6 border border-slate-200 shadow-2xl space-y-4">
+            <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+              <Upload className="w-4 h-4 text-emerald-600" />
               <span>Import Students via Excel / CSV</span>
             </h3>
 
-            <div className="p-6 border-2 border-dashed border-slate-800 rounded-xl text-center space-y-2 bg-slate-950/50">
-              <Upload className="w-8 h-8 text-emerald-400 mx-auto opacity-80" />
-              <p className="text-xs text-slate-300 font-medium">Drag &amp; drop your .xlsx or .csv roster here</p>
+            <div className="p-6 border-2 border-dashed border-slate-200 rounded-2xl text-center space-y-2 bg-slate-50">
+              <Upload className="w-8 h-8 text-emerald-600 mx-auto" />
+              <p className="text-xs text-slate-700 font-bold">Drag &amp; drop your .xlsx or .csv roster here</p>
               <p className="text-[11px] text-slate-500">Auto-cleans phone codes (+880), preserves leading zeros</p>
             </div>
 
@@ -297,14 +295,14 @@ export default function StudentsPage() {
               <button
                 type="button"
                 onClick={() => setImportModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-slate-900 text-slate-400 hover:text-white text-xs font-semibold"
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 hover:text-slate-900 text-xs font-bold"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSimulatedImport}
                 disabled={isImporting}
-                className="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs"
+                className="px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-sm"
               >
                 {isImporting ? "Processing Roster..." : "Upload & Parse"}
               </button>
@@ -315,4 +313,3 @@ export default function StudentsPage() {
     </div>
   );
 }
-
