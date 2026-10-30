@@ -37,27 +37,13 @@ export default function LoginPage() {
     setSuccessMsg("");
 
     try {
-      if (!configured) {
-        // Fallback for demo / preview before user puts real API keys
-        setTimeout(() => {
-          router.push("/app");
-        }, 600);
-        return;
-      }
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        setErrorMsg(error.message);
-      } else if (data.session) {
-        setSuccessMsg("Signed in successfully! Redirecting to workspace...");
-        setTimeout(() => {
-          router.push("/app");
-        }, 500);
-      }
+      // Direct access mode: Auth is inactive for testing
+      setIsLoading(true);
+      setSuccessMsg("Direct access enabled. Entering workspace...");
+      setTimeout(() => {
+        router.push("/app");
+      }, 300);
+      return;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to sign in";
       setErrorMsg(message);
@@ -143,17 +129,22 @@ export default function LoginPage() {
 
       {/* Main Glassmorphic Auth Card */}
       <div className="w-full max-w-md glass-panel rounded-3xl p-8 border border-slate-800 shadow-2xl relative z-10 space-y-6">
-        {!configured && (
-          <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs space-y-1 text-slate-300">
-            <div className="flex items-center gap-1.5 font-bold text-emerald-400">
-              <Sparkles className="w-4 h-4" />
-              <span>Supabase Ready &bull; Preview Mode</span>
-            </div>
-            <p className="text-[11px] text-slate-400 leading-relaxed">
-              Add your <code className="text-emerald-300 font-mono">NEXT_PUBLIC_SUPABASE_URL</code> to <code className="text-emerald-300 font-mono">.env.local</code>. You can log in directly right now!
-            </p>
+        <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs space-y-2 text-slate-300">
+          <div className="flex items-center gap-1.5 font-bold text-emerald-400">
+            <Sparkles className="w-4 h-4" />
+            <span>Direct Access Mode (Authentication Inactive)</span>
           </div>
-        )}
+          <p className="text-[11px] text-slate-400 leading-relaxed">
+            Authentication is currently bypassed so you can explore all features directly.
+          </p>
+          <Link
+            href="/app"
+            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow transition-all"
+          >
+            <span>Enter Dashboard Directly</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
 
         {/* Tab switcher: Password vs Magic Link */}
         <div className="grid grid-cols-2 p-1 rounded-xl bg-slate-950/80 border border-slate-850 text-xs font-semibold">

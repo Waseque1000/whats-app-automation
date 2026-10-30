@@ -46,36 +46,13 @@ export default function RegisterPage() {
     setSuccessMsg("");
 
     try {
-      if (!configured) {
-        // Fallback for preview / demo mode
-        setSuccessMsg("Account created in Preview Mode! Launching your workspace...");
-        setTimeout(() => {
-          router.push("/app");
-        }, 800);
-        return;
-      }
-
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            organization: organization,
-            plan: selectedPlan,
-          },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (error) {
-        setErrorMsg(error.message);
-      } else if (data.session) {
-        setSuccessMsg("Account registered successfully! Redirecting...");
-        setTimeout(() => router.push("/app"), 600);
-      } else {
-        setSuccessMsg("Registration successful! Please check your email to confirm your account.");
-      }
+      // Direct access mode: Registration is inactive for testing
+      setIsLoading(true);
+      setSuccessMsg("Direct access enabled! Entering workspace...");
+      setTimeout(() => {
+        router.push("/app");
+      }, 300);
+      return;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to create account";
       setErrorMsg(message);
@@ -110,6 +87,22 @@ export default function RegisterPage() {
 
       {/* Main Glassmorphic Auth Card */}
       <div className="w-full max-w-lg glass-panel rounded-3xl p-8 border border-slate-800 shadow-2xl relative z-10 space-y-6">
+        <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-xs space-y-2 text-slate-300">
+          <div className="flex items-center gap-1.5 font-bold text-emerald-400">
+            <Sparkles className="w-4 h-4" />
+            <span>Direct Access Mode (Registration Inactive)</span>
+          </div>
+          <p className="text-[11px] text-slate-400 leading-relaxed">
+            Registration is currently bypassed for testing. You can jump directly into your workspace.
+          </p>
+          <Link
+            href="/app"
+            className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow transition-all"
+          >
+            <span>Enter Dashboard Directly</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
         {/* Error Alert */}
         {errorMsg && (
           <div className="p-3.5 rounded-xl bg-red-950/40 border border-red-500/30 text-xs text-red-300 flex items-center gap-2">

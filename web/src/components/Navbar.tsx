@@ -35,20 +35,8 @@ export function Navbar() {
           {/* Right Action Buttons */}
           <div className="hidden md:flex items-center space-x-3">
             <Link
-              href="/login"
-              className="text-xs font-semibold text-slate-300 hover:text-white px-3 py-2 transition-colors"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/register"
-              className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 text-slate-200 font-semibold text-xs border border-slate-800 transition-colors"
-            >
-              Register
-            </Link>
-            <Link
               href="/app"
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <span>Launch App</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -92,26 +80,10 @@ export function Navbar() {
           >
             Pricing
           </Link>
-          <div className="pt-2 border-t border-slate-850 flex items-center gap-3">
-            <Link
-              href="/login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex-1 py-2 rounded-lg bg-slate-900 text-center text-slate-300 font-semibold text-xs border border-slate-800"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/register"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex-1 py-2 rounded-lg bg-slate-900 text-center text-slate-300 font-semibold text-xs border border-slate-800"
-            >
-              Register
-            </Link>
-          </div>
           <Link
             href="/app"
             onClick={() => setMobileMenuOpen(false)}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-bold text-center"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-bold text-center"
           >
             Launch Web App <ArrowRight className="w-4 h-4" />
           </Link>
