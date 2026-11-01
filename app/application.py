@@ -33,7 +33,7 @@ class WhatsAppStudentMessengerApp(ctk.CTk):
 
         # Window geometry and styling
         self.title("WhatsApp Student Messenger")
-        self.geometry("1280x820")
+        self.geometry("1360x860")
         self.minsize(1080, 680)
         self.configure(fg_color=theme.COLOR_BACKGROUND)
 

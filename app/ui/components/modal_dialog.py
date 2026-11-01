@@ -31,7 +31,7 @@ class ModalDialog(ctk.CTkToplevel):
 
         # Header
         self.header_frame = ctk.CTkFrame(
-            self, fg_color=theme.COLOR_SIDEBAR, height=52, corner_radius=0
+            self, fg_color="#090E14", height=60, corner_radius=0
         )
         self.header_frame.grid(row=0, column=0, sticky="ew")
         self.header_frame.grid_columnconfigure(0, weight=1)
@@ -39,7 +39,7 @@ class ModalDialog(ctk.CTkToplevel):
         self.title_label = ctk.CTkLabel(
             self.header_frame,
             text=title,
-            font=theme.FONT_HEADLINE_SM,
+            font=theme.FONT_HEADLINE_MD,
             text_color=theme.COLOR_TEXT,
             anchor="w",
         )
@@ -51,7 +51,7 @@ class ModalDialog(ctk.CTkToplevel):
 
         # Footer for buttons
         self.footer_frame = ctk.CTkFrame(
-            self, fg_color=theme.COLOR_SIDEBAR, height=56, corner_radius=0
+            self, fg_color="#090E14", height=56, corner_radius=0
         )
         self.footer_frame.grid(row=2, column=0, sticky="ew")
 
@@ -84,7 +84,7 @@ class ModalDialog(ctk.CTkToplevel):
             fg_color=fg,
             hover_color=hover,
             text_color=txt_color,
-            font=theme.FONT_HEADLINE_SM,
+            font=theme.FONT_HEADLINE_MD,
             height=34,
             corner_radius=6,
         )

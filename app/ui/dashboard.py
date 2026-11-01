@@ -66,7 +66,7 @@ class DashboardPage(ctk.CTkFrame):
             hover_color=theme.COLOR_PRIMARY_HOVER,
             text_color="#0F1115",
             height=36,
-            corner_radius=6,
+            corner_radius=8,
             command=lambda: self.on_navigate("campaigns"),
         )
         btn_new_campaign.pack(side="left", padx=6)
@@ -81,7 +81,7 @@ class DashboardPage(ctk.CTkFrame):
             border_width=1,
             border_color=theme.COLOR_BORDER,
             height=36,
-            corner_radius=6,
+            corner_radius=8,
             command=lambda: self.on_navigate("students"),
         )
         btn_import.pack(side="left", padx=6)
@@ -138,7 +138,7 @@ class DashboardPage(ctk.CTkFrame):
         # Left Column: Recent Campaigns
         camp_header = ctk.CTkLabel(
             tables_frame,
-            text="RECENT CAMPAIGNS",
+            text="🗂  RECENT CAMPAIGNS",
             font=theme.FONT_HEADLINE_SM,
             text_color=theme.COLOR_TEXT_MUTED,
             anchor="w",
@@ -158,7 +158,7 @@ class DashboardPage(ctk.CTkFrame):
         # Right Column: Recent Imports
         imp_header = ctk.CTkLabel(
             tables_frame,
-            text="RECENT IMPORTS",
+            text="📥  RECENT IMPORTS",
             font=theme.FONT_HEADLINE_SM,
             text_color=theme.COLOR_TEXT_MUTED,
             anchor="w",

@@ -5,8 +5,9 @@ import customtkinter as ctk
 from typing import List, Tuple, Dict, Any, Optional, Callable
 from app.ui import theme
 
+
 class TableView(ctk.CTkFrame):
-    """Modern dark-themed data table widget."""
+    """Premium dark-themed data table widget with custom TTK styling."""
 
     def __init__(
         self,
@@ -21,7 +22,7 @@ class TableView(ctk.CTkFrame):
             fg_color=theme.COLOR_CARD,
             border_width=1,
             border_color=theme.COLOR_BORDER,
-            corner_radius=8,
+            corner_radius=12,
             **kwargs,
         )
         self.columns_def = columns
@@ -38,34 +39,56 @@ class TableView(ctk.CTkFrame):
         style = ttk.Style()
         style.theme_use("clam")
 
-        # Configure custom dark style for Treeview
+        # ── Treeview Body ─────────────────────────────────────────────────────
         style.configure(
-            "Dark.Treeview",
-            background=theme.COLOR_CARD,
+            "Premium.Treeview",
+            background=theme.COLOR_TABLE_BG,
             foreground=theme.COLOR_TEXT,
-            fieldbackground=theme.COLOR_CARD,
+            fieldbackground=theme.COLOR_TABLE_BG,
             borderwidth=0,
-            rowheight=32,
-            font=theme.FONT_BODY_MD,
+            rowheight=38,
+            font=(theme.FONT_FAMILY, 12),
         )
         style.map(
-            "Dark.Treeview",
-            background=[("selected", theme.COLOR_CARD_HOVER)],
-            foreground=[("selected", theme.COLOR_PRIMARY)],
+            "Premium.Treeview",
+            background=[("selected", theme.COLOR_TABLE_SEL_BG)],
+            foreground=[("selected", theme.COLOR_TABLE_SEL_FG)],
         )
+        # Remove the focus dotted border
+        style.layout("Premium.Treeview", [
+            ("Premium.Treeview.treearea", {"sticky": "nswe"})
+        ])
 
+        # ── Column Headings ───────────────────────────────────────────────────
         style.configure(
-            "Dark.Treeview.Heading",
-            background=theme.COLOR_SIDEBAR,
+            "Premium.Treeview.Heading",
+            background=theme.COLOR_TABLE_HEADER,
             foreground=theme.COLOR_TEXT_MUTED,
-            borderwidth=1,
+            borderwidth=0,
             relief="flat",
-            font=theme.FONT_HEADLINE_SM,
+            font=(theme.FONT_FAMILY, 11, "bold"),
+            padding=(8, 10),
         )
         style.map(
-            "Dark.Treeview.Heading",
+            "Premium.Treeview.Heading",
             background=[("active", theme.COLOR_CARD_HOVER)],
             foreground=[("active", theme.COLOR_TEXT)],
+        )
+
+        # ── Scrollbar Styling ─────────────────────────────────────────────────
+        style.configure(
+            "Premium.Vertical.TScrollbar",
+            background=theme.COLOR_CARD,
+            troughcolor=theme.COLOR_TABLE_BG,
+            borderwidth=0,
+            arrowsize=12,
+        )
+        style.configure(
+            "Premium.Horizontal.TScrollbar",
+            background=theme.COLOR_CARD,
+            troughcolor=theme.COLOR_TABLE_BG,
+            borderwidth=0,
+            arrowsize=12,
         )
 
         col_ids = [col[0] for col in self.columns_def]
@@ -76,21 +99,27 @@ class TableView(ctk.CTkFrame):
             columns=col_ids,
             show="headings",
             selectmode=select_mode,
-            style="Dark.Treeview",
+            style="Premium.Treeview",
         )
 
         for col_id, heading, width in self.columns_def:
-            self.tree.heading(col_id, text=heading, anchor="w")
-            self.tree.column(col_id, width=width, anchor="w", stretch=True)
+            self.tree.heading(col_id, text=f"  {heading}", anchor="w")
+            self.tree.column(col_id, width=width, anchor="w", stretch=True, minwidth=40)
 
         # Scrollbars
-        vsb = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
-        hsb = ttk.Scrollbar(self, orient="horizontal", command=self.tree.xview)
+        vsb = ttk.Scrollbar(
+            self, orient="vertical", command=self.tree.yview,
+            style="Premium.Vertical.TScrollbar",
+        )
+        hsb = ttk.Scrollbar(
+            self, orient="horizontal", command=self.tree.xview,
+            style="Premium.Horizontal.TScrollbar",
+        )
         self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
 
-        self.tree.grid(row=0, column=0, sticky="nsew", padx=(2, 0), pady=(2, 0))
-        vsb.grid(row=0, column=1, sticky="ns", pady=(2, 0), padx=(0, 2))
-        hsb.grid(row=1, column=0, sticky="ew", padx=(2, 0), pady=(0, 2))
+        self.tree.grid(row=0, column=0, sticky="nsew", padx=(1, 0), pady=(1, 0))
+        vsb.grid(row=0, column=1, sticky="ns", pady=(1, 0), padx=(0, 1))
+        hsb.grid(row=1, column=0, sticky="ew", padx=(1, 0), pady=(0, 1))
 
         self.tree.bind("<<TreeviewSelect>>", self._on_tree_select)
 
@@ -113,12 +142,11 @@ class TableView(ctk.CTkFrame):
         col_ids = [col[0] for col in self.columns_def]
         for idx, rec in enumerate(records):
             values = [rec.get(col_id, "") for col_id in col_ids]
-            # Tag alternate rows for subtle zebra tinting
             tag = "even" if idx % 2 == 0 else "odd"
             self.tree.insert("", "end", text=str(idx), values=values, tags=(tag,))
 
-        self.tree.tag_configure("even", background=theme.COLOR_CARD)
-        self.tree.tag_configure("odd", background=theme.COLOR_SIDEBAR)
+        self.tree.tag_configure("even", background=theme.COLOR_TABLE_BG)
+        self.tree.tag_configure("odd",  background=theme.COLOR_TABLE_STRIPE)
 
     def get_selected_records(self) -> List[Dict[str, Any]]:
         """Returns all currently selected row records."""
